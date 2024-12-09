@@ -11,12 +11,16 @@ import sys
 import xml.etree.ElementTree
 import cairosvg
 from PIL import Image
-import re
+import validators
+from urllib.parse import urlparse
+import requests
 
 
 DEFAULT_GLOBAL_FAUCET = 'https://signetfaucet.com/claim'
 DEFAULT_GLOBAL_CAPTCHA = 'https://signetfaucet.com/captcha'
 GLOBAL_FIRST_BLOCK_HASH = '00000086d6b2636cb2a392d45edc4ec544a10024d30141c9adf4bfd9de533b53'
+# Allowed domains whitelist
+ALLOWED_DOMAINS = ['trusted-domain.com', 'another-trusted-domain.com']
 
 # braille unicode block
 BASE = 0x2800
@@ -50,6 +54,24 @@ class PPMImage:
 
     def getpixel(self, pos):
         return self._grid[pos[1]][pos[0]]
+
+def is_valid_faucet_url(url):
+    """
+    Validate the faucet URL to ensure that the domain is allowed and the URL is well-formed.
+    """
+    # Parse the URL to extract the domain
+    parsed_url = urlparse(url)
+
+    # Validate the domain using validators.domain()
+    if not validators.domain(parsed_url.hostname):
+        return False  # Invalid domain format
+
+    # Check if the domain is in the allowed list
+    if parsed_url.hostname not in ALLOWED_DOMAINS:
+        return False  # Domain not in the whitelist
+
+    return True
+
 
 def print_image(img, threshold=128):
     '''Print black-and-white image to terminal in braille unicode characters.'''
@@ -152,14 +174,15 @@ if args.captcha != '': # Retrieve a captcha
     data['captcha'] = input('Enter captcha: ')
 
 try:
-    # Validate the faucet URL format
-    incoming_faucet = args.faucet
-    
-    if not is_valid_url_format(incoming_faucet):
-        raise ValueError(f"Invalid faucet URL format: {args.faucet}")
-    
     # Proceed with the POST request
-    res = session.post(incoming_faucet, data=data)
+    # Validate the faucet URL
+    faucet_url = args.faucet
+
+    if not is_valid_faucet_url(faucet_url):
+        raise ValueError(f"Invalid or untrusted faucet URL: {faucet_url}")
+
+    # Proceed with the GET request if the URL is valid
+    res = requests.post(faucet_url, data=data)
 except Exception:
     raise SystemExit(f"Unexpected error when contacting faucet: {sys.exc_info()[0]}")
 
@@ -175,11 +198,3 @@ else:
     print(f'Returned Error Code {res.status_code}\n{res.text}\n')
     print('Please check the provided arguments for their validity and/or any possible typo.')
 
-
-def is_valid_url_format(url):
-    # Regular expression to match only valid HTTPS URLs
-    pattern = re.compile(r'^https://[a-zA-Z0-9.-]+$')
-    
-    if not pattern.match(url):
-        return False
-    return True
