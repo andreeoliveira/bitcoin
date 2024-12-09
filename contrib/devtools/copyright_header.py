@@ -433,10 +433,22 @@ def update_cmd(argv):
     if len(argv) != 3:
         sys.exit(UPDATE_USAGE)
 
+    # The trusted base directory
+    TRUSTED_BASE_DIR = "/path/to/trusted/directory"
+
     base_directory = argv[2]
+    # Check if the directory exists
     if not os.path.exists(base_directory):
         sys.exit("*** bad base_directory: %s" % base_directory)
-    exec_update_header_year(base_directory)
+
+    # Normalize the path
+    normalized_path = os.path.realpath(base_directory)
+
+    # Ensure the normalized path is within the trusted base directory
+    if not normalized_path.startswith(os.path.realpath(TRUSTED_BASE_DIR)):
+        sys.exit("*** Unauthorized base_directory: %s" % base_directory)
+
+    exec_update_header_year(normalized_path)
 
 ################################################################################
 # inserted copyright header format
