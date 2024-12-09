@@ -11,6 +11,7 @@ import sys
 import xml.etree.ElementTree
 import cairosvg
 from PIL import Image
+from urllib.parse import urlparse, urlunparse
 
 
 DEFAULT_GLOBAL_FAUCET = 'https://signetfaucet.com/claim'
@@ -97,6 +98,18 @@ def bitcoin_cli(rpc_command_and_params):
         cmdline = ' '.join(argv)
         raise SystemExit(f"-----\nError while calling {cmdline} (see output above).")
 
+def sanitize_faucet_url(url):
+    parsed_url = urlparse(url)
+    
+    # Only allow certain schemes and remove query/fragment
+    if parsed_url.scheme not in ['http', 'https']:
+        raise ValueError(f"Invalid scheme in faucet URL: {url}")
+    
+    # Remove query and fragment
+    sanitized_url = urlunparse(parsed_url._replace(query='', fragment=''))
+    
+    return sanitized_url
+
 
 if args.faucet.lower() == DEFAULT_GLOBAL_FAUCET:
     # Get the hash of the block at height 1 of the currently active signet chain
@@ -151,7 +164,11 @@ if args.captcha != '': # Retrieve a captcha
     data['captcha'] = input('Enter captcha: ')
 
 try:
-    res = session.post(args.faucet, data=data)
+    # Sanitize and validate the faucet URL
+    sanitized_url = sanitize_faucet_url(args.faucet)
+
+    # Proceed with the POST request
+    res = session.post(sanitized_url, data=data)
 except Exception:
     raise SystemExit(f"Unexpected error when contacting faucet: {sys.exc_info()[0]}")
 
