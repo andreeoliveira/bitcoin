@@ -129,7 +129,7 @@ if args.captcha != '': # Retrieve a captcha
 
     # Convert SVG image to PPM, and load it
     try:
-        rv = subprocess.run([args.imagemagick, 'svg:-', '-depth', '8', 'ppm:-'], input=res.content, check=True, capture_output=True)
+        rv = shutil.which(args.imagemagick)
     except FileNotFoundError:
         raise SystemExit(f"The binary {args.imagemagick} could not be found. Please make sure ImageMagick (or a compatible fork) is installed and that the correct path is specified.")
 
