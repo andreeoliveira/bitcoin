@@ -11,6 +11,7 @@ import sys
 import xml.etree.ElementTree
 import cairosvg
 from PIL import Image
+import re
 
 
 DEFAULT_GLOBAL_FAUCET = 'https://signetfaucet.com/claim'
@@ -151,13 +152,14 @@ if args.captcha != '': # Retrieve a captcha
     data['captcha'] = input('Enter captcha: ')
 
 try:
-    # Ensure the user-provided faucet URL is in the whitelist
-    whitelisted_faucet = is_whitelisted_faucet(args.faucet);
-    if not whitelisted_faucet:
-        raise ValueError(f"Unapproved faucet URL: {args.faucet}")
+    # Validate the faucet URL format
+    incoming_faucet = args.faucet
+    
+    if not is_valid_url_format(incoming_faucet):
+        raise ValueError(f"Invalid faucet URL format: {args.faucet}")
     
     # Proceed with the POST request
-    res = session.post(whitelisted_faucet, data=data)
+    res = session.post(incoming_faucet, data=data)
 except Exception:
     raise SystemExit(f"Unexpected error when contacting faucet: {sys.exc_info()[0]}")
 
@@ -174,11 +176,10 @@ else:
     print('Please check the provided arguments for their validity and/or any possible typo.')
 
 
-# Define a whitelist of approved faucet URLs
-WHITELISTED_URLS = {
-    "main_faucet": "https://trusted-domain.com/faucet",
-    "backup_faucet": "https://backup-domain.com/faucet"
-}
-
-def is_whitelisted_faucet(url):
-    return url in WHITELISTED_URLS.values()
+def is_valid_url_format(url):
+    # Regular expression to match only valid HTTPS URLs
+    pattern = re.compile(r'^https://[a-zA-Z0-9.-]+$')
+    
+    if not pattern.match(url):
+        return False
+    return True
