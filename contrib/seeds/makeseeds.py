@@ -207,20 +207,31 @@ def main():
     # Define the trusted base directory
     TRUSTED_BASE_DIR = "/path/to/trusted/asmap/directory"
 
-    # Get the provided asmap file path
+    # Allowed filenames for extra safety
+    ALLOWED_FILES = {"allowed_file1.asmap", "allowed_file2.asmap"}
+
+    # Get the asmap file path
     asmap_path = args.asmap
 
-    # Normalize the path
-    normalized_path = os.path.realpath(asmap_path)
+    # Sanitize the input: Ensure it's a valid file name
+    file_name = os.path.basename(asmap_path)
+    if file_name not in ALLOWED_FILES:
+        sys.exit(f"Unauthorized or unrecognized file name: {file_name}")
+
+    # Construct the full path within the trusted base directory
+    full_path = os.path.join(TRUSTED_BASE_DIR, file_name)
+
+    # Normalize and resolve the full path
+    normalized_path = os.path.realpath(full_path)
     trusted_base_realpath = os.path.realpath(TRUSTED_BASE_DIR)
 
     # Ensure the normalized path is within the trusted base directory
     if not os.path.commonpath([trusted_base_realpath, normalized_path]) == trusted_base_realpath:
-        sys.exit(f"Unauthorized asmap file path: {asmap_path}")
+        sys.exit(f"Unauthorized path traversal attempt detected: {asmap_path}")
 
     # Ensure the file exists
     if not os.path.isfile(normalized_path):
-        sys.exit(f"ASMap file not found: {asmap_path}")
+        sys.exit(f"ASMap file not found: {normalized_path}")
 
     print(f'Loading asmap database "{normalized_path}"…', end='', file=sys.stderr, flush=True)
 
