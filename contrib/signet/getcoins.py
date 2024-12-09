@@ -152,11 +152,12 @@ if args.captcha != '': # Retrieve a captcha
 
 try:
     # Ensure the user-provided faucet URL is in the whitelist
-    if not is_whitelisted_faucet(args.faucet):
+    whitelisted_faucet = is_whitelisted_faucet(args.faucet);
+    if not whitelisted_faucet:
         raise ValueError(f"Unapproved faucet URL: {args.faucet}")
     
     # Proceed with the POST request
-    res = session.post(args.faucet, data=data)
+    res = session.post(whitelisted_faucet, data=data)
 except Exception:
     raise SystemExit(f"Unexpected error when contacting faucet: {sys.exc_info()[0]}")
 
