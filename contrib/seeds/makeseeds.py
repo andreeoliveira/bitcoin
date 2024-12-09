@@ -204,45 +204,46 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # Define the trusted base directory
-    TRUSTED_BASE_DIR = "/path/to/trusted/asmap/directory"
+    # Define the trusted base directory for `asmap`
+    TRUSTED_ASMAP_DIR = "/path/to/trusted/asmap/directory"
+    # Define the trusted base directory for `seeds`
+    TRUSTED_SEEDS_DIR = "/path/to/trusted/seeds/directory"
 
-    # Allowed filenames for extra safety
-    ALLOWED_FILES = {"allowed_file1.asmap", "allowed_file2.asmap"}
+    # Allowed filenames for asmap and seeds
+    ALLOWED_ASMAP_FILES = {"allowed_file1.asmap", "allowed_file2.asmap"}
+    ALLOWED_SEEDS_FILES = {"dns_seeds.txt", "other_seeds.txt"}
 
-    # Get the asmap file path
+    # Secure `args.asmap` handling
     asmap_path = args.asmap
-
-    # Sanitize the input: Ensure it's a valid file name
-    file_name = os.path.basename(asmap_path)
-    if file_name not in ALLOWED_FILES:
-        sys.exit(f"Unauthorized or unrecognized file name: {file_name}")
-
-    # Construct the full path within the trusted base directory
-    full_path = os.path.join(TRUSTED_BASE_DIR, file_name)
-
-    # Normalize and resolve the full path
-    normalized_path = os.path.realpath(full_path)
-    trusted_base_realpath = os.path.realpath(TRUSTED_BASE_DIR)
-
-    # Ensure the normalized path is within the trusted base directory
-    if not os.path.commonpath([trusted_base_realpath, normalized_path]) == trusted_base_realpath:
+    asmap_file_name = os.path.basename(asmap_path)
+    if asmap_file_name not in ALLOWED_ASMAP_FILES:
+        sys.exit(f"Unauthorized or unrecognized file name: {asmap_file_name}")
+    asmap_full_path = os.path.join(TRUSTED_ASMAP_DIR, asmap_file_name)
+    asmap_normalized_path = os.path.realpath(asmap_full_path)
+    trusted_asmap_realpath = os.path.realpath(TRUSTED_ASMAP_DIR)
+    if not os.path.commonpath([trusted_asmap_realpath, asmap_normalized_path]) == trusted_asmap_realpath:
         sys.exit(f"Unauthorized path traversal attempt detected: {asmap_path}")
-
-    # Ensure the file exists
-    if not os.path.isfile(normalized_path):
-        sys.exit(f"ASMap file not found: {normalized_path}")
-
-    print(f'Loading asmap database "{normalized_path}"…', end='', file=sys.stderr, flush=True)
-
-    # Safely open the file
-    with open(normalized_path, 'rb') as f:
+    if not os.path.isfile(asmap_normalized_path):
+        sys.exit(f"ASMap file not found: {asmap_normalized_path}")
+    print(f'Loading asmap database "{asmap_normalized_path}"…', end='', file=sys.stderr, flush=True)
+    with open(asmap_normalized_path, 'rb') as f:
         asmap = ASMap.from_binary(f.read())
     print('Done.', file=sys.stderr)
 
-
+    # Secure `args.seeds` handling
+    seeds_path = args.seeds
+    seeds_file_name = os.path.basename(seeds_path)
+    if seeds_file_name not in ALLOWED_SEEDS_FILES:
+        sys.exit(f"Unauthorized or unrecognized file name: {seeds_file_name}")
+    seeds_full_path = os.path.join(TRUSTED_SEEDS_DIR, seeds_file_name)
+    seeds_normalized_path = os.path.realpath(seeds_full_path)
+    trusted_seeds_realpath = os.path.realpath(TRUSTED_SEEDS_DIR)
+    if not os.path.commonpath([trusted_seeds_realpath, seeds_normalized_path]) == trusted_seeds_realpath:
+        sys.exit(f"Unauthorized path traversal attempt detected: {seeds_path}")
+    if not os.path.isfile(seeds_normalized_path):
+        sys.exit(f"Seeds file not found: {seeds_normalized_path}")
     print('Loading and parsing DNS seeds…', end='', file=sys.stderr, flush=True)
-    with open(args.seeds, 'r', encoding='utf8') as f:
+    with open(seeds_normalized_path, 'r', encoding='utf8') as f:
         lines = f.readlines()
     ips = [parseline(line) for line in lines]
     random.shuffle(ips)
