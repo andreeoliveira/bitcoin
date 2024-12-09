@@ -9,6 +9,9 @@ import requests
 import subprocess
 import sys
 import xml.etree.ElementTree
+import cairosvg
+from PIL import Image
+
 
 DEFAULT_GLOBAL_FAUCET = 'https://signetfaucet.com/claim'
 DEFAULT_GLOBAL_CAPTCHA = 'https://signetfaucet.com/captcha'
@@ -129,20 +132,18 @@ if args.captcha != '': # Retrieve a captcha
 
     # Convert SVG image to PPM, and load it
     try:
-        # Ensure ImageMagick executable exists
-        imagemagick_path = shutil.which(args.imagemagick)
-        if not imagemagick_path:
-            raise FileNotFoundError(f"ImageMagick executable '{args.imagemagick}' not found in PATH.")
+        # Convert SVG data to PNG (using cairosvg)
+        svg_data = res.content
+        png_data = cairosvg.svg2png(bytestring=svg_data)
     
-        # Run ImageMagick using subprocess
-        rv = subprocess.run(
-            [imagemagick_path, 'svg:-', '-depth', '8', 'ppm:-'],
-            input=res.content, check=True, capture_output=True
-        )
+        # Open the PNG with Pillow and convert it to PPM
+        image = Image.open(io.BytesIO(png_data))
+        ppm_data = io.BytesIO()
+        image.save(ppm_data, format="PPM")
     except FileNotFoundError:
         raise SystemExit(f"The binary {args.imagemagick} could not be found. Please make sure ImageMagick (or a compatible fork) is installed and that the correct path is specified.")
 
-    img = PPMImage(io.BytesIO(rv.stdout))
+    img = PPMImage(io.BytesIO(ppm_data.getvalue()))
 
     # Terminal interaction
     print_image(img)
