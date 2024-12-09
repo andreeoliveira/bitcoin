@@ -204,8 +204,18 @@ def parse_args():
 def main():
     args = parse_args()
 
-    print(f'Loading asmap database "{args.asmap}"…', end='', file=sys.stderr, flush=True)
-    with open(args.asmap, 'rb') as f:
+    # Define a trusted base directory
+    TRUSTED_BASE_DIR = "/path/to/trusted/asmap/directory"
+    normalized_path = os.path.realpath(args.asmap)
+
+    if not normalized_path.startswith(os.path.realpath(TRUSTED_BASE_DIR)):
+        sys.exit(f"Unauthorized asmap file path: {asmap_path}")
+
+    if not os.path.isfile(normalized_path):
+        sys.exit(f"ASMap file not found: {asmap_path}")
+    print(f'Loading asmap database "{normalized_path}"…', end='', file=sys.stderr, flush=True)
+    # Safely open the file
+    with open(normalized_path, 'rb') as f:
         asmap = ASMap.from_binary(f.read())
     print('Done.', file=sys.stderr)
 
