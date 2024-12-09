@@ -204,20 +204,31 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # Define a trusted base directory
+    # Define the trusted base directory
     TRUSTED_BASE_DIR = "/path/to/trusted/asmap/directory"
-    normalized_path = os.path.realpath(args.asmap)
 
-    if not normalized_path.startswith(os.path.realpath(TRUSTED_BASE_DIR)):
+    # Get the provided asmap file path
+    asmap_path = args.asmap
+
+    # Normalize the path
+    normalized_path = os.path.realpath(asmap_path)
+    trusted_base_realpath = os.path.realpath(TRUSTED_BASE_DIR)
+
+    # Ensure the normalized path is within the trusted base directory
+    if not os.path.commonpath([trusted_base_realpath, normalized_path]) == trusted_base_realpath:
         sys.exit(f"Unauthorized asmap file path: {asmap_path}")
 
+    # Ensure the file exists
     if not os.path.isfile(normalized_path):
         sys.exit(f"ASMap file not found: {asmap_path}")
+
     print(f'Loading asmap database "{normalized_path}"…', end='', file=sys.stderr, flush=True)
+
     # Safely open the file
     with open(normalized_path, 'rb') as f:
         asmap = ASMap.from_binary(f.read())
     print('Done.', file=sys.stderr)
+
 
     print('Loading and parsing DNS seeds…', end='', file=sys.stderr, flush=True)
     with open(args.seeds, 'r', encoding='utf8') as f:
