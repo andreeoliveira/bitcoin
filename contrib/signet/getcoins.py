@@ -14,6 +14,7 @@ from PIL import Image
 import validators
 from urllib.parse import urlparse
 import requests
+from yarl import URL
 
 
 DEFAULT_GLOBAL_FAUCET = 'https://signetfaucet.com/claim'
@@ -109,22 +110,6 @@ args = parser.parse_args()
 if args.bitcoin_cli_args == []:
     args.bitcoin_cli_args = ['-signet']
 
-def sanitise(string: str) -> str:
-    if not string:
-        raise ValueError("String cannot be null or empty")
-
-    # Step 1: Trim leading and trailing whitespace
-    sanitised_string = string.strip()
-
-    # Step 2: Remove unwanted characters (e.g., diacritics)
-    # Normalize string to decompose diacritics and remove them
-    sanitised_string = ''.join(
-        c for c in unicodedata.normalize('NFD', sanitised_string)
-        if unicodedata.category(c) != 'Mn'
-    )
-
-    return sanitised_string
-
 def bitcoin_cli(rpc_command_and_params):
     argv = [args.cmd] + args.bitcoin_cli_args + rpc_command_and_params
     try:
@@ -193,14 +178,17 @@ try:
     # Validate the faucet URL
     faucet_url = args.faucet
 
-    # Sanitize the URI
-    sanitised_uri = sanitise(faucet_url)
-
-    if not is_valid_faucet_url(sanitised_uri):
+    if not is_valid_faucet_url(args.faucet):
         raise ValueError(f"Invalid or untrusted faucet URL: {faucet_url}")
 
+    # Parse the URL to extract the domain
+    parsed_url = urlparse(url)
+
      # Make the HTTP POST request
-    res = requests.post(sanitised_uri,  data=data)
+    url = URL.build(scheme="https", host=parsed_url.hostname, path=parsed_url.path)
+    res = requests.post(url,  data=data)
+    from yarl import URL
+
 except Exception:
     raise SystemExit(f"Unexpected error when contacting faucet: {sys.exc_info()[0]}")
 
