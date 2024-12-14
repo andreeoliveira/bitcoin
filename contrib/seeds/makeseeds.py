@@ -243,8 +243,6 @@ def main():
     print('Loading and parsing DNS seeds…', end='', file=sys.stderr, flush=True)
     if seeds_full_path.startswith("file:"):
         sys.exit(f"Unsecure file reference: {seeds_full_path}")
-    if seeds_full_path.startswith("file:"):
-        sys.exit(f"Unsecure file reference: {seeds_full_path}")
     with open(seeds_full_path, 'r', encoding='utf8') as f:
         lines = f.readlines()
     ips = [parseline(line) for line in lines]
